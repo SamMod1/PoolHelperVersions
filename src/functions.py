@@ -1,12 +1,10 @@
-import os
-import io
 import sys
 import plotly
 import base64
+import random
 import numpy as np
 import pandas as pd
 from jinja2 import Template
-import src.backend_classes as bc
 import plotly.graph_objects as go
 from cryptography.hazmat.primitives import hashes
 from cryptography.fernet import Fernet, InvalidToken
@@ -21,15 +19,12 @@ _96_WELL_POSITIONS = string = {'Q1': np.array([['384 A1', '384 A3', '384 A5', '3
           'Q2': np.array([['384 A2', '384 A4', '384 A6', '384 A8', '384 A10', '384 A12', '384 A14', '384 A16', '384 A18', '384 A20', '384 A22', '384 A24'], ['384 C2', '384 C4', '384 C6', '384 C8', '384 C10', '384 C12', '384 C14', '384 C16', '384 C18', '384 C20', '384 C22', '384 C24'], ['384 E2', '384 E4', '384 E6', '384 E8', '384 E10', '384 E12', '384 E14', '384 E16', '384 E18', '384 E20', '384 E22', '384 E24'], ['384 G2', '384 G4', '384 G6', '384 G8', '384 G10', '384 G12', '384 G14', '384 G16', '384 G18', '384 G20', '384 G22', '384 G24'], ['384 I2', '384 I4', '384 I6', '384 I8', '384 I10', '384 I12', '384 I14', '384 I16', '384 I18', '384 I20', '384 I22', '384 I24'], ['384 K2', '384 K4', '384 K6', '384 K8', '384 K10', '384 K12', '384 K14', '384 K16', '384 K18', '384 K20', '384 K22', '384 K24'], ['384 M2', '384 M4', '384 M6', '384 M8', '384 M10', '384 M12', '384 M14', '384 M16', '384 M18', '384 M20', '384 M22', '384 M24'], ['384 O2', '384 O4', '384 O6', '384 O8', '384 O10', '384 O12', '384 O14', '384 O16', '384 O18', '384 O20', '384 O22', '384 O24']], dtype=object),
           'Q3': np.array([['384 B1', '384 B3', '384 B5', '384 B7', '384 B9', '384 B11', '384 B13', '384 B15', '384 B17', '384 B19', '384 B21', '384 B23'], ['384 D1', '384 D3', '384 D5', '384 D7', '384 D9', '384 D11', '384 D13', '384 D15', '384 D17', '384 D19', '384 D21', '384 D23'], ['384 F1', '384 F3', '384 F5', '384 F7', '384 F9', '384 F11', '384 F13', '384 F15', '384 F17', '384 F19', '384 F21', '384 F23'], ['384 H1', '384 H3', '384 H5', '384 H7', '384 H9', '384 H11', '384 H13', '384 H15', '384 H17', '384 H19', '384 H21', '384 H23'], ['384 J1', '384 J3', '384 J5', '384 J7', '384 J9', '384 J11', '384 J13', '384 J15', '384 J17', '384 J19', '384 J21', '384 J23'], ['384 L1', '384 L3', '384 L5', '384 L7', '384 L9', '384 L11', '384 L13', '384 L15', '384 L17', '384 L19', '384 L21', '384 L23'], ['384 N1', '384 N3', '384 N5', '384 N7', '384 N9', '384 N11', '384 N13', '384 N15', '384 N17', '384 N19', '384 N21', '384 N23'], ['384 P1', '384 P3', '384 P5', '384 P7', '384 P9', '384 P11', '384 P13', '384 P15', '384 P17', '384 P19', '384 P21', '384 P23']], dtype=object),
           'Q4': np.array([['384 B2', '384 B4', '384 B6', '384 B8', '384 B10', '384 B12', '384 B14', '384 B16', '384 B18', '384 B20', '384 B22', '384 B24'], ['384 D2', '384 D4', '384 D6', '384 D8', '384 D10', '384 D12', '384 D14', '384 D16', '384 D18', '384 D20', '384 D22', '384 D24'], ['384 F2', '384 F4', '384 F6', '384 F8', '384 F10', '384 F12', '384 F14', '384 F16', '384 F18', '384 F20', '384 F22', '384 F24'], ['384 H2', '384 H4', '384 H6', '384 H8', '384 H10', '384 H12', '384 H14', '384 H16', '384 H18', '384 H20', '384 H22', '384 H24'], ['384 J2', '384 J4', '384 J6', '384 J8', '384 J10', '384 J12', '384 J14', '384 J16', '384 J18', '384 J20', '384 J22', '384 J24'], ['384 L2', '384 L4', '384 L6', '384 L8', '384 L10', '384 L12', '384 L14', '384 L16', '384 L18', '384 L20', '384 L22', '384 L24'], ['384 N2', '384 N4', '384 N6', '384 N8', '384 N10', '384 N12', '384 N14', '384 N16', '384 N18', '384 N20', '384 N22', '384 N24'], ['384 P2', '384 P4', '384 P6', '384 P8', '384 P10', '384 P12', '384 P14', '384 P16', '384 P18', '384 P20', '384 P22', '384 P24']], dtype=object)}
-
+random.seed(1)
 
 
 def lims_query(query : str, cur) -> list:
     """Executes and returns the query"""
-    if not 'VGSM' in query.upper():
-        query_2 = query.replace(' from ', ' from C_')
-        query += ' union ' + query_2
-    cur.execute(query + '\n\n')
+    cur.execute(query)
     return cur.fetchall()
 
 
@@ -38,17 +33,20 @@ def pd_lims_query(query,connection):
     return(resultDF)
 
 
-def get_araya(query : str, cur):
+def get_araya(plate : str, cur):
     """
     Returns the name of the araya the plate was run on. If the plate cannot be found in LIMS, it returns None.
     
     Parameters:
-        query: An SQL query which returns the araya a plate is run on if the plate exists
+        plate: A string of the tape ID (array code).
         cur: A cx_Oracle cursor which connects to the LIMS mirror database.
     
     Returns:
         str
     """
+    query = f"""select VALUE from JOB_PARAMETER where JOB = (
+    select JOB_NAME from JOB_HEADER where ARRAY_CODE = '{plate}' fetch first 1 rows only
+    ) and VALUE like 'ARAYA%' fetch first 1 rows only"""  
     araya = lims_query(query, cur)
     if len(araya) == 0:
         return None
@@ -154,7 +152,7 @@ def extract_quadrant(matrix, quadrant : str):
     return new_matrix
 
 
-def repooled_check(ELUTE_list, cur, queries):
+def repooled_check(ELUTE_list, cur):
     """
     Function by @Graham Hill. Takes a list of the elution plates on a pool plate and returns True or False based on whether 
     it has been repooled or not
@@ -165,9 +163,6 @@ def repooled_check(ELUTE_list, cur, queries):
             A list of the elution plates used to make up the 384 plate
         cur : cx_Oracle cursor object
             A cursor object from a connection to the LIMS mirror datbase
-        queries : str
-            A list or tuple containing two queries (str). In the 0th index this query should be the query used when there is only one
-            elution plate, the 1st index should contain a query to be used if there are multiple elution plates
             
     Returns
     -------
@@ -176,21 +171,33 @@ def repooled_check(ELUTE_list, cur, queries):
     if cur == None:
         return False
     if len(ELUTE_list) == 1:
-        query = queries[0].replace('$elute', str(ELUTE_list[0]))
+        query = """select ELUTION_PLATE from VGSM.COMPRESSION_JOIN where ELUTION_PLATE = '"""+str(ELUTE_list[0])+"""'"""
+        print(query)
     #Selects from Comression Join
     else:
-        query = queries[1].replace('$elute_list', str(tuple(ELUTE_list)))
+        query = """select ELUTION_PLATE from VGSM.COMPRESSION_JOIN where ELUTION_PLATE in """+str(tuple(ELUTE_list))
     #The username and password parts here aren't being passed to this function, so beware!
     response = lims_query(query,cur)
     #Finds duplicates. Could offload into the SQL, but max df size ought to be 64 lines
     return not len(set(response)) == len(response)
 
 
-def restamp_finder(from_date, to_date, cur, query):
+def restamp_finder(from_date, to_date, cur):
     """Returns a list of plates which were re-stamped between (or equal to) the dates given"""
     if cur == None:
         return []
-    query = query.replace('$from_date', str(from_date)[0:10]).replace('$to_date', str(to_date)[0:10])
+    query = f"""
+select distinct j.job_name
+from vgsm.sweeper_log s, vgsm.blob_values b, vgsm.job_header j
+where b.blob_id=s.archived_file_blob and s.original_filename like '%PipetteLog%' and s.log_time >= to_date('{str(from_date)[0:10]}','yyyy-mm-dd') and s.log_time <= to_date('{str(to_date)[0:10]}','yyyy-mm-dd')
+and j.job_name=substr(UTL_RAW.CAST_TO_VARCHAR2(DBMS_LOB.SUBSTR(b.blob_field, 600,1)),
+instr(UTL_RAW.CAST_TO_VARCHAR2(DBMS_LOB.SUBSTR(b.blob_field, 600,1)),'<PLATECODE>')+11,12)
+and j.job_name in
+( select j1.job_name from vgsm.job_header j1, vgsm.sweeper_log s1, vgsm.blob_values b1 where b1.blob_id=s1.archived_file_blob and s1.original_filename like '%PipetteLog%' and j1.job_name=substr(UTL_RAW.CAST_TO_VARCHAR2(DBMS_LOB.SUBSTR(b1.blob_field, 600,1)),
+instr(UTL_RAW.CAST_TO_VARCHAR2(DBMS_LOB.SUBSTR(b1.blob_field, 600,1)),'<PLATECODE>')+11,12)
+group by j1.job_name having count(*)>1 )
+/* and s.original_filename not in ( select s2.original_filename from vgsm.sweeper_log s2 where s2.original_filename like '%PipetteLog%' group by (s2.original_filename ) having count(*)>1 ) */
+    """
     #query = """select JOB_NAME where """
     output = lims_query(query, cur)
     return output
@@ -256,84 +263,94 @@ def add_plot_lines(plot, lines : list, line_width : int):
             other_axis = 'y'
         shapes.append({'type' : 'line', axis+'ref' : axis, axis+'0' : line[1], axis+'1' : line[1], other_axis+'ref' : 'paper',
                                       other_axis+'0' : 0, other_axis+'1' : 1, 'line' : {'color' : line[2], 'width' : line_width, 'dash' : 'dot'}})
-    plot.update_layout(shapes = shapes, plot_bgcolor = 'lightgray')
+    plot.update_layout(shapes = shapes)
 
     return Template(plotly.offline.plot(plot, include_plotlyjs = False, output_type = 'div'))
 
 
-def find_stripes(plate_matrix, flag_matrix, flag_numbers, glob : dict, positive_threshold : int):
-    """
-    Determines the size of every vertical and horiztonal stripe of positives on a microplate
-
-    Parameters
-    ----------
-        plate_matrix : 2D numpy array
-            A 2D matrix of this quadrant's nFAM values
-        flag_matrix : 2D numpy array
-            The current plate's flag matrix, as created by backend_classes.Plate._quadrant_matrices()
-        flag_numbers : 2D numpy array
-            The current plate's flag numbers matrix, as created by backend_classes.Plate._quadrant_matrices()
-        glob : dict
-            Contains the global variables for Pool Helper which are stored encrypted on the shared drive
-        positive_threshold : int
-            The positive threshold for nFAM of the current araya
-    
-    Returns
-    -------
-        A tuple containing two numpy arrays which are versions of the flag_matrix and the flag_numbers with any detected stripes
-        added into them
-    """
-    plate_matrix = plate_matrix.astype(float)
-    plate_dimensions = (8, 12)
-    for well in glob['x96_CONTROL_WELLS']:
-        plate_matrix[well] = 0
+def striping_pass_one(plate_matrix):
+    plate_dimensions = plate_matrix.shape
     blank_matrix = np.array([[[0,0] for _ in range(plate_dimensions[1])] for _ in range(plate_dimensions[0])])
     adjacent_positives = []
-    this_group = []
+    hor_group = 0
+    hor_groups = []
+    ver_group = 0
+    ver_groups = []
     for row in range(plate_dimensions[0]):
         for col in range(plate_dimensions[1]):
-            if plate_matrix[row, col] >= positive_threshold:
+            if plate_matrix[(row, col)] == 1:
                 if not col == plate_dimensions[1] - 1:
-                    if plate_matrix[row, col + 1] >= positive_threshold and blank_matrix[row, col + 1][0] == 0:
-                        blank_matrix[row, col][0] = 1
-                        this_group = []
+                    if plate_matrix[(row, col + 1)] == 1 and blank_matrix[(row, col + 1)][0] == 0:
+                        blank_matrix[(row, col)][0] = 1
+                        hor_groups.append([(row, col)])
                         adjacent_positives = [(row, col)]
                         while len(adjacent_positives) > 0:
                             current_well = adjacent_positives[0]
-                            this_group.append(current_well)
                             adjacent_positives.pop(0)
                             if current_well[1] + 1 > plate_dimensions[1] - 1:  # I.e if we hit the end of a row
                                 break
                             right_well = (current_well[0], current_well[1] + 1)
-                            if plate_matrix[right_well] >= positive_threshold and blank_matrix[right_well][0] == 0:
+                            if plate_matrix[right_well] == 1 and blank_matrix[right_well][0] == 0:
                                 blank_matrix[right_well][0] = 1
                                 adjacent_positives.append(right_well)
-                        if len(this_group) >= glob['STRIPE_LIMIT'][0]:
-                            for well in this_group:
-                                if flag_matrix[well] == 'None':
-                                    flag_matrix[well] = 'Stripe'
-                                    flag_numbers[well] = 3
+                                hor_groups[hor_group].append(right_well)
+                        hor_group += 1
                 if not row == plate_dimensions[0] - 1:
-                    if plate_matrix[row + 1, col] >= positive_threshold and blank_matrix[row + 1, col][1] == 0:
-                        blank_matrix[row, col][1] = 1
-                        this_group = []
+                    if plate_matrix[(row + 1, col)] == 1 and blank_matrix[(row + 1, col)][1] == 0:
+                        blank_matrix[(row, col)][1] = 1
+                        ver_groups.append([(row, col)])
                         adjacent_positives = [(row, col)]
                         while len(adjacent_positives) > 0:
                             current_well = adjacent_positives[0]
-                            this_group.append(current_well)
                             adjacent_positives.pop(0)
                             if current_well[0] + 1 > plate_dimensions[0] - 1:
                                 break
                             well_below = (current_well[0] + 1, current_well[1])
-                            if plate_matrix[well_below] >= positive_threshold and blank_matrix[well_below][1] == 0:
+                            if plate_matrix[well_below] == 1 and blank_matrix[well_below][1] == 0:
                                 blank_matrix[well_below][1] = 1
                                 adjacent_positives.append(well_below)
-                        if len(this_group) >= glob['STRIPE_LIMIT'][1]:
-                            for well in this_group:
-                                if flag_matrix[well] == 'None':
-                                    flag_matrix[well] = 'Stripe'
-                                    flag_numbers[well] = 3
-    return flag_matrix, flag_numbers
+                                ver_groups[ver_group].append(well_below)
+                        ver_group += 1
+    return (hor_groups, ver_groups)
+
+
+def analyse_stripe(stripe, plate_matrix, barcode_matrix, simulations = 50000):
+    """
+    Determines the size of every vertical and horiztonal stripe of positives on a microplate
+
+    Parameters:
+    plate_matrix : Matrix
+        A 2D matrix representing a microplate assay, zeros represent negative samples, ones represent positive values.
+        Controls can be represented by any other value
+    
+    Returns:
+    A tuple containing two lists of numbers. The numbers in the first list represent the sizes of each horizontal stripe,
+    the second list contains the sizes of each vertical stripe of positves.
+    """
+    barcodes = []
+    barcode_prev = {}
+    for well in stripe:
+        barcodes.append(barcode_matrix[well])
+    for barcode in barcodes:
+        barcode_results = plate_matrix[barcode_matrix == barcode]
+        #print(barcode_results)
+        barcode_prev[barcode] = (barcode_results == 1).sum() / len(barcode_results)
+    results = np.array([], dtype = bool)
+    #print(barcode_prev['AVA'])
+    for _ in range(simulations):
+        success = True
+        for barcode in barcodes:
+            num = random.random()
+            #print(barcode)
+            #print(num)
+            #print(barcode_prev[barcode])
+            if num > barcode_prev[barcode]:
+                success = False
+                break
+        results = np.append(results, success)
+    #print(alpha)
+    p = results.sum() / len(results)
+    return p
 
 
 def plot_platemap(matrices : dict, width : int, height : int, title : str, glob : dict, quadrant = None):
@@ -372,8 +389,8 @@ def plot_platemap(matrices : dict, width : int, height : int, title : str, glob 
         A jinja2 Template object of the plotly platemap
     """
     result_colours = glob['RESULT_COLOURS']
-    pos = ''
     plotly_js = False
+    pos = ''
     vic_title = ''
     if not quadrant == None:
         labels = _96_WELL_POSITIONS[quadrant]
@@ -601,219 +618,12 @@ def detect_carryover(plate_pos, plate_vic, plate_plods, previous_fam, previous_v
     return (pos_carried, vic_carried, pos_to_plod)
 
 
-def _plate_read(filename, array_code, pool, glob : dict, thresholds, cur, filepath = './/Araya Files//') -> dict:
-    """
-    Takes an araya file from LIMS as a bytes object and reads all of the data into an data frame. Most of this code was written by Graham Hill.
-    The function also writes the araya file as a csv file to the specified filepath.
-    
-    Parameters:
-        file: An araya file represented as a bytes object obtained directly from the LIMS database.
-        df: A dictionary representing a data frame. This should have the following keys:
-            'readDate', arrayCode', 'FAM', 'VIC', 'ROX', 'Quadrant', 'x384well', 'x384row', 'x384col', 'x96row', 'x96col', 'x96well', 
-            'TapeID', 'n_FAM', 'n_VIC'.
-        filepath: The filepath in which to write the downloaded araya files.
-        
-    Returns:
-        A version of the dictionary df, which has had all of the araya file's data appended to it.
-    """
-    if type(filename) == str:
-        with open(filepath + filename, 'r') as file:
-            file = file.readlines()
-    else:
-        b_file = io.BytesIO(filename.read()).readlines()
-        #print(b_file)
-        file = []
-        for b_line in b_file:
-            line = b_line.decode()
-            file.append(line)
-    rawdat = file[1].split('-')[1]
-    date = rawdat[0:4]+":"+rawdat[4:6]+":"+rawdat[6:8]+":"+rawdat[8:10]+":"+rawdat[10:12]+":"+rawdat[12:14]
-    active = None
-    plate = bc.Plate(pool, array_code, glob, thresholds, date, cur)
-    FAM = []
-    VIC = []
-    ROX = []
-    for line in file:
-        line = line.replace('\n', '').replace('\r', '')
-        #print(line + '//end//')
-        #file is csv, split on comma
-        col = line.split(",")
-        #print(col)
-        if len(col) > 1:
-            if len(col) == 26 and active == "FAM":
-                #grab the relevant fluo values as a list
-                row = col[1:25]
-                #append the list to the FAM list
-                FAM.extend(row)
-            #Repeat for VIC and ROX
-            elif len(col) == 26 and active == "VIC":
-                row = col[1:25]
-                VIC.extend(row)
-            elif len(col) == 26 and active == "ROX":
-                row = col[1:25]
-                ROX.extend(row)	
-            elif "Date" == col[0]:
-                rawdat = col[1].strip("-")
-                date = rawdat[0:4]+":"+rawdat[4:6]+":"+rawdat[6:8]+":"+rawdat[8:10]+":"+rawdat[10:12]+":"+rawdat[12:14]
-                plate.read_date = date
-            elif "Code" == col[0]:
-                code = col[1]	
-                plate.array_code = code[-6:]
-            #trigger for reading the FAM table and init FAM list
-            elif "FAM" == col[1]:
-                active = "FAM"
-            #if the line is long enough to have fluo values and FAM is on, values go to FAM
-            elif "VIC" == col[1]:
-                active = "VIC"
-            elif "ROX" == col[1]:
-                active = "ROX"
-            #So all the FAM, VIC and ROX fluo values are stored by row and column in a list of lists
-        
-    idx = 0
-    print(filename)
-    for col in ("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P"):
-        for row in [str(x) for x in range(1, 25)]:
-            plate[col + row] = bc.Sample(int(float(FAM[idx])), int(float(VIC[idx])), int(float(ROX[idx])))
-            idx += 1
-    
-    # Write out the file as a .csv file incase the data scientist wants is:
-    if not type(filename) == str:
-        with open(filepath + rawdat + '_' + code.replace('.', '-') + '.csv', 'wb') as f:
-            f.writelines(b_file)
-            #for line in file:
-            #    f.write(line[0:len(line) - 1])
-    return plate
-
-def _get_files(first : str, cur, queries):
-    """
-    Finds and downloads any araya files in LIMS which are within the same batch as the first Tape ID which is supplied 
-    to the fuction
-    
-    Parameters
-    ----------
-        first : str
-            Any array code in the batch of plates to be downloaded (doesn't actually have to be the first in the batch)
-        cur : cx_Oracle cursor object
-            A cursor object from a connection to the LIMS mirror datbase
-        queries
-            A list or a tuple containing two SQL queries. The first (0th) query should be part of the where clause, this function
-            will iterate through a list of plates and append this where clause onto itself to build multiple like cases. The 2nd query
-            will contain everything but the where clause and will download the araya file from the sweeper_log / blob_field tables
-    
-    Returns
-    -------
-        A list of tuples which contain the array code in the 0th index and the file itself (as a cx_Oracle.LOB object) in
-        the 1st index
-    """
-    first = int(first)
-    arrays = [x for x in range(first - 16, first + 16)]  # Generates all possible array codes in the batch
-    insert_str = ''
-    for array in arrays:
-        str_array = str(array) + '.csv'
-        while True:
-            if len(str_array) >= 10:
-                break
-            str_array = '0' + str_array
-        insert_str += queries[0].replace('$array_code', str_array)
-    insert_str = insert_str[0:-4]
-    
-    query = queries[1].replace('$where_clause', insert_str)
-    all_files = lims_query(query, cur)
-    all_arrays = [int(x[0][0:6]) for x in all_files]
-    #print(arrays)
-
-    # This code filters out any arrays which are not in the same batch as the given array
-    wanted_arrays = []
-    lower = arrays[:16]
-    lower.reverse()
-    for array in lower:
-        if array in all_arrays:
-            wanted_arrays.append(all_files[all_arrays.index(array)])
-            
-        else:
-            break
-        
-    higher = arrays[16:]
-    for array in higher:
-        if array in all_arrays:
-            wanted_arrays.append(all_files[all_arrays.index(array)])
-        else:
-            break
-
-    return sorted(wanted_arrays, key=lambda x: x[0], reverse=False)
-
-def _get_pool(query : str, cur):
+def get_pool(array_code : str, cur):
     """If the array code's plate is in LIMS, this will return the POOL ID, else it will return None"""
     if cur == None:
         return None
-    pool = lims_query(query, cur)
+    pool = lims_query(f"""select JOB_NAME from JOB_HEADER where ARRAY_CODE = '{array_code}'""", cur)
     if len(pool) == 0:
         return None
     else:
         return pool[0][0]
-
-def pipe(first : str, glob : dict, thresholds, cur, queries, filepath = './/Araya Files//', from_files = False) -> dict:
-    """
-    This should probably be a method of the analysis class
-    Creates a dictionary from the raw data in the araya files located in the filepath. This can then be turned into a DataFrame.
-    
-    Parameters
-    ----------
-        first : str
-            The tape ID which is in the batch the user wants to analyse.
-        glob : dict
-            Contains the global variables for Pool Helper which are stored encrypted on the shared drive
-        thresholds : dict
-            Contains the thresholds for the current araya
-        cur: A cx_Oracle cursor object connected to the LIMS mirror database.
-        queries
-            A list or a tuple containing two SQL queries. The first (0th) query should be part of the where clause, this function
-            will iterate through a list of plates and append this where clause onto itself to build multiple like cases. The 2nd query
-            will contain everything but the where clause and will download the araya file from the sweeper_log / blob_field tables. The
-            final query should be a query to get the pool plate using the array code.
-        filepath : str
-            The location in which to save the array files which this function will download
-            NOTE: All files here will be overwritten if from_files is set to False
-        from_files : bool
-            Whether to run the function from araya files in the filepath directory. If False, this function will download 
-            files from the LIMS mirror using the first array code supplied to the function
-    
-    Returns
-    -------
-        A dictionary with the keys:
-            'readDate', arrayCode', 'FAM', 'VIC', 'ROX', 'Quadrant', 'x384well', 'x384row', 'x384col', 'x96row', 'x96col', 'x96well', 
-            'TapeID', 'n_FAM', 'n_VIC'
-    
-    This fuction is made from Graham's code in his 'PaulPipe script.
-    """
-    if not from_files:
-        for file in os.listdir(filepath):
-            os.remove(filepath + file)  # Deletes all arayas still in the araya files directory
-        files = _get_files(first, cur, queries)
-        plates = {}
-        #extra bit for terminal
-    
-        for file in files:
-            pool = _get_pool(queries[2].replace('$array_code', file[0][:6]), cur)
-            plates[file[0][:6]] = _plate_read(file[1], int(file[0][:6]), pool, glob, thresholds, cur)
-    else:
-        plates = {}
-        plate_lst = []
-        for each_file in os.listdir(filepath):
-        #eliminate non-csv
-           if each_file.endswith(".csv"):
-        	#eliminate file-level duplicates
-            if " " in each_file:
-                pass
-            else:
-            	if each_file[-10:-4] in plates.keys():
-            		pass
-            	else:
-                    pool = _get_pool(queries[2].replace('$array_code', each_file[-10:-4]), cur)
-                    plate_lst.append([each_file, pool])
-           else:
-           	pass
-        plate_lst = sorted(plate_lst, key=lambda x: x[0][-10:-4], reverse=False)
-        for each_file in plate_lst:
-            plates[each_file[0][-10:-4]] = _plate_read(each_file[0], int(each_file[0][-10:-4]), each_file[1], glob, thresholds, cur, filepath = filepath)
-    return plates

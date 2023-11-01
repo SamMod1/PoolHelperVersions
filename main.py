@@ -6,7 +6,7 @@ PROGRAM_NAME = """
 ██║░░░░░╚█████╔╝╚█████╔╝███████╗  ██║░░██║███████╗███████╗██║░░░░░███████╗██║░░██║
 ╚═╝░░░░░░╚════╝░░╚════╝░╚══════╝  ╚═╝░░╚═╝╚══════╝╚══════╝╚═╝░░░░░╚══════╝╚═╝░░╚═╝
 """
-VERSION = 'Release 2.0'
+VERSION = 'Dev 2.0 Sim'
 """
 This is a re-write of the Pool Helper analysis program. The aim of this re-write is to write in new features, make the script object-orientated 
 and make it more efficient.
@@ -31,10 +31,11 @@ TODO
 
 import os
 import sys
-#import cx_Oracle
+import pandas as pd
 import src.functions as f
 from getpass import getpass
-import src.backend_classes as bc
+from src.analysis import Analysis
+from sim.generateModel import Simulator
 
 
 CONFIG_FILE = 'config.txt'
@@ -45,6 +46,11 @@ CURRENT_VERSION_FILE = "version.txt"
 GLOBALS = None
 ADMINS = None
 THRESHOLDS = {}
+POSITIVES_TO_GEN = (1, 93)  # The range of true positives per plate this analysis should consider
+PLATES_TO_GEN = 50000  # How many plates to generate for each number of positives in the range POSITIVES_TO_GEN
+PLATE_DIMENSIONS = (8, 12)  # Dimensions for the microplate array. E.g. (8, 12) for 96 well plates, (24, 16) for 384 well plates
+CONTROL_POSITIONS = ((8, 10), (8, 11), (8, 12))  # The locations on plates which contain any control wells
+CHANNEL_POSITIVITY = 0.4  # Positivity rate for the testing channel of interest
 
 
 class PoolHelper:
@@ -52,6 +58,8 @@ class PoolHelper:
         self.check_version()
         self.lims_pass = 'lims_pass'
         self.thresholds_pass = 'config_pass'
+        self.p_thresholds = pd.read_csv('.//sim//thresholds.csv')
+        self.alpha = self.p_thresholds['p'][0]
         self.connection = None
         self.cur = None
         self.thresholds = None
@@ -92,10 +100,10 @@ Type 'OFFLINE' to enter offline mode: """)
                 if VERSION != latest_version:
                     print(VERSION + '\n')
                     f.give_warning(f"""WARNING: 
-        This is not the live version of Pool Helper.
-        Only the live version may be used for data reporting
+        This is not the latest version of Pool Helper.
+        Only the latest version may be used for data reporting
         This version: {VERSION}
-        Live version: {latest_version}
+        Latest version: {latest_version}
         Do you wish to continue?""")
                 else:
                     print(f"{VERSION} (latest)")
@@ -109,26 +117,23 @@ Type 'OFFLINE' to enter offline mode: """)
     
     def lims_login(self):
         self.admin = False
-        
-        self.login_failed()
-        
         try:
-            try:
+            if False:#try:
                 encrypted = os.getenv('LIMS_MIRROR_CREDENTIALS')
                 if encrypted == None:
                     self.login_failed()
                 decrypted = f.decrypt(self.lims_pass, encrypted.encode())
                 credentials = decrypted.decode().split('£$%')
                 self.username = credentials[0]
-                #self.connection = cx_Oracle.connect(user=self.username,password=credentials[1],dsn="LIMSREP")
-                #self.connection.current_schema = 'VGSM'
-                #self.cur = self.connection.cursor()
+                self.connection = None# cx_Oracle.connect(user=self.username,password=credentials[1],dsn="LIMSREP")
+                self.connection.current_schema = 'VGSM'
+                self.cur = self.connection.cursor()
                 print('\n')
                 if self.username in ADMINS:
                     self.admin = True
                     print('You are an admin user')
                 print("LIMS login successful")
-            except ValueError:#cx_Oracle.DatabaseError:
+            if True:# except cx_Oracle.DatabaseError:
                     self.login_failed()
         except AttributeError:
             self.login_failed()
@@ -147,8 +152,8 @@ Type 'OFFLINE' to enter offline mode: """)
                 encrypted = file.read()
         except (FileNotFoundError, PermissionError):
                 f.give_warning("""ERROR: 
-Could not access the config in the shared drive:\n\\strjupiterflproduks01.file.core.windows.net\limsextract\poolHelper
-Access to this file is needed for the program to run properly. Please request access to the required drive if you do not have access.
+Could not access the shared drive: \\strjupiterflproduks01.file.core.windows.net\limsextract\poolHelper
+Access to this drive is needed for the program to run properly. Please request access to the required drive.
         """, serious_error = True)
         decrypted = f.decrypt(self.thresholds_pass, encrypted)
         self.globals = decrypted.decode()
@@ -183,10 +188,24 @@ Access to this file is needed for the program to run properly. Please request ac
         else:
             print("Only admins can do this!")
     
+    def modify_p(self):
+        print(f'The current p-value is set to {self.p_thresholds["p"][0]}')
+        try:
+            p = input("Enter a new p-value to save: ")
+            sim = Simulator(PLATE_DIMENSIONS, POSITIVES_TO_GEN, CONTROL_POSITIONS, PLATES_TO_GEN)
+            print('\nAnalysing simulation...')
+            self.p_thresholds = pd.DataFrame(sim.get_p_thresholds(alpha_value = float(p), filepath = './/sim//'))
+            self.p_thresholds['p'] = p
+            self.p_thresholds.to_csv('.//sim//thresholds.csv', index = False)
+            self.alpha = float(p)
+        except ValueError:
+            print('\nERROR: p-values must be numeric!\n')
+        self.menus()
+    
     def menus(self):
         print("""
 \nMain Menu
-------------------------------------------------------------------------
+--------------------------------------------------------------
 To see a list of commands enter 'help'
 To run a batch of plates enter 'r'
 To exit the program enter 'q'""")
@@ -195,7 +214,7 @@ To exit the program enter 'q'""")
             if inp.lower() == 'help':
                 print("""
 \nMain Menu Commands
-------------------------------------------------------------------------
+--------------------------------------------------------------
 'help'      : This page
 'r'         : Run a batch of plates
 'rf'        : Run a batch of plates from files in the Araya Files folder
@@ -203,9 +222,10 @@ To exit the program enter 'q'""")
 'login'     : Modify and save your LIMS login information
 'thresholds': View the current thresholds
 'admins'    : View admin users
+'p'         : Modifies the p-value used for designating patterns as suspicious
 'update'    : (admin) Modify a threshold for all users
 'radmin'    : (admin) Runs a plate with the option to choose the araya
-'rfadmin'   : (admin) Run from files while choosing the araya
+'rfadmin'   : (admin) Run from files as admin
     """)
             elif inp.lower() == 'r':
                 if self.offline:
@@ -220,6 +240,8 @@ To exit the program enter 'q'""")
                 self.lims_login_modify()
             elif inp.lower() == 'update':
                 self.modify_threshold()
+            elif inp.lower() == 'p':
+                self.modify_p()
             elif inp.lower() == 'thresholds':
                 print(self.thresholds)
             elif inp.lower() == 'admins':
@@ -236,21 +258,21 @@ To exit the program enter 'q'""")
             print("Only admins can do this!")
             self.menus()
         if self.cur == None:
-            self.analysis = bc.Analysis(VERSION, None, GLOBALS, THRESHOLDS, None, admin = True, from_files = True, mirrorless = True)
+            self.analysis = Analysis(VERSION, None, GLOBALS, THRESHOLDS, None, self.p_thresholds, self.alpha, PLATES_TO_GEN, admin = True, from_files = True, mirrorless = True)
         elif not from_files:
             try:
-                plate = input('Enter the array code of one plate in the batch: ')
+                plate = input('Enter the Tape ID of one plate in the batch: ')
                 int(plate)
             except ValueError:
                 print('\nERROR: Input must be a number')
                 self.menus()
             try:
-                self.analysis = bc.Analysis(VERSION, plate, GLOBALS, THRESHOLDS, self.cur, admin = as_admin)
+                self.analysis = Analysis(VERSION, plate, GLOBALS, THRESHOLDS, self.cur, self.p_thresholds, self.alpha, PLATES_TO_GEN, admin = as_admin)
             except (UnboundLocalError, IndexError):
                 print('\nERROR: Something went wrong! The plate you entered may not be in LIMS')
                 self.menus()
         else:
-            self.analysis = bc.Analysis(VERSION, None, GLOBALS, THRESHOLDS, self.cur, admin = as_admin, from_files = True)
+            self.analysis = Analysis(VERSION, None, GLOBALS, THRESHOLDS, self.cur, self.p_thresholds, self.alpha, PLATES_TO_GEN, admin = as_admin, from_files = True)
         self.analysis.run_analysis()
     
 

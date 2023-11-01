@@ -1,4 +1,4 @@
-#import cx_Oracle
+import cx_Oracle
 import numpy as np
 import pandas as pd
 import src.functions as f
@@ -231,7 +231,8 @@ class Plate:
                   'Q1' : ['',''], 'Q2' : ['',''], 'Q3' : ['',''], 'Q4' : ['','']}
         wells = WELLS['Q1'] + WELLS['Q2'] + WELLS['Q3'] + WELLS['Q4']
         elutes = []
-        query = self.globals['LY_EL_QUERY'].replace('$pool', self.pool).replace('$wells', str(wells))
+        query = f"""select LYSIS_PLATE, ELUTION_PLATE, PLATE_COORDINATE from SAMPLE 
+        where JOB_NAME = '{self.pool}' and PLATE_COORDINATE in {wells}"""
         response = f.lims_query(query, self.cur)
         quadrants = ['Q1', 'Q2', 'Q3', 'Q4']
         for x in response:
@@ -245,9 +246,8 @@ class Plate:
                     break
             if len(quadrants) == 0:
                 break
-        if self.globals['REPOOL_CHECK']:
-            if f.repooled_check(elutes, self.cur, [self.globals['REPOOL_QUERY_1'], self.globals['REPOOL_QUERY_2']]):
-                self.repooled = True
+        if f.repooled_check(elutes, self.cur):
+            self.repooled = True
         return result
     
     def find_instruments(self):
@@ -276,7 +276,7 @@ class Plate:
         plates = (self.pool, result['Q1'][0], result['Q1'][1], result['Q2'][0], result['Q2'][1], 
                   result['Q3'][0], result['Q3'][1], result['Q4'][0], result['Q4'][1])
         plates = tuple([x for x in plates if not x == None])
-        instruments = f.lims_query(self.globals['INSTRUMENTS_QUERY'].replace('$plates', str(plates)), self.cur)
+        instruments = f.lims_query(f"""select VALUE, JOB from JOB_PARAMETER where JOB in {str(plates)}""", self.cur)
         for row in instruments:
             instrument = row[0]
             if row[1] == self.pool:
@@ -554,7 +554,7 @@ class Plate:
     
     def detect_escalations_quadrant(self, matrices, quadrant):
         """Detects if the plate needs to be escalated because a failure has invalidated samples"""
-        if np.isin(matrices['flag_matrix'], ('VIC accu', 'Pos fail', 'ROX qnos')).sum() >= 2:
+        if np.isin(matrices['flag_matrix'], ('VIC accu', 'Pos fail', 'ROX poscon')).sum() >= 2:
             if 'VIC accu' in matrices['flag_matrix']:
                 self.escalations.append(f'Level 2 - The qnostic has failed on {quadrant}, and the accuplex in the same quadrant contains RNaseP')
             else:
@@ -721,10 +721,11 @@ class Plate:
         comments = {'Q1' : {}, 'Q2' : {}, 'Q3' : {}, 'Q4' : {}, 'Pool' : []}
         all_plates = list(plates['Q1'] + plates['Q2'] + plates['Q3'] + plates['Q4'])
         all_plates.append(plates['Pool'])
-        query = self.globals['COMMENTS_QUERY'].replace('$all_plates', str(tuple(all_plates)))
+        query = f"""select COMMENTS, JOB_HEADER from VGSM.C19_JOB_COMMENTS 
+        where JOB_HEADER in {tuple(all_plates)} fetch first 100 rows only"""
         try:
             comments_df = pd.DataFrame(f.lims_query(query, self.cur), columns = ('comment', 'plate'))
-        except ValueError:#cx_Oracle.DatabaseError:
+        except cx_Oracle.DatabaseError:
             self.comments = "ERROR - Could not fetch comments"
             return None
         for quadrant in QUADRANTS:
@@ -750,14 +751,8 @@ class Plate:
     
     def check_if_prio(self):
         """Returns True or False based on whether the plate is priority or not"""
-        if 'priority' in self.comments.lower() or not len(set(self.globals['PRIO_CODES'] + self.df['barcode'].unique().tolist())
-                                                      ) == len(self.globals['PRIO_CODES'] + self.df['barcode'].unique().tolist()):
-            return True
-        return False
-    #test
-    def check_if_vip(self):
-        """Returns True or False based on whether the plate is priority or not"""
-        if ' vip ' in self.comments.lower() or '(vip)' in self.comments.lower():
+        if 'priority' in self.comments.lower() or 'vip' in self.comments.lower() or 'AVA' in self.df[
+                'barcode'].unique() or 'PRK' in self.df['barcode'].unique():
             return True
         return False
     
@@ -846,7 +841,8 @@ class Analysis:
         run_analysis()
             Builds the html output file based on the data in each of the plates in the run
     """
-    def __init__(self, version, first_array, glob, thresholds, cur, admin = False, from_files = False, mirrorless = False, filepath = './/Araya Files//'):
+    def __init__(self, version, first_array, glob, thresholds, cur, p_thresholds, admin = False, from_files = False, 
+                 mirrorless = False, filepath = './/Araya Files//'):
         self.cur = cur
         self.admin = admin
         self.mirrorless = mirrorless
@@ -854,19 +850,18 @@ class Analysis:
         self.html = self.globals['HTML_FIRST_TAB']
         self.html = self.html.replace('£version£', version)
         self.thresholds = thresholds
-        queries = (self.globals['GET_FILES_QUERY_1'], self.globals['GET_FILES_QUERY_2'], self.globals['POOL_QUERY'])
-        self.plates = f.pipe(first_array, self.globals, self.thresholds, self.cur, queries, filepath = filepath, from_files = from_files)
+        self.p_thresholds = p_thresholds
+        self.plates = f.pipe(first_array, self.globals, self.thresholds, self.cur, filepath = filepath, from_files = from_files)
         self.date = datetime.strptime(self.plates[list(self.plates.keys())[0]].date[0:10], '%Y:%m:%d')
-        self.restamped = []
-        if self.globals['RESTAMP_CHECK']:
-            print('Finding restamps...')
-            self.restamped = f.restamp_finder(self.date - timedelta(days = 3), self.date + timedelta(days = 1), self.cur, self.globals['RESTAMP_QUERY'])
+        print('Finding restamps...')
+        self.restamped = f.restamp_finder(self.date - timedelta(days = 3), self.date + timedelta(days = 1), self.cur)
         self.set_thresholds()
         pools = tuple([x.pool for x in list(self.plates.values()) if x.pool != None])
         pools_str = str(pools)
         if len(pools) == 1:
             pools_str = pools_str.replace(',', '')
-        query = self.globals['BARCODES_QUERY'].replace('$pools', pools_str)
+        query = f"""select JOB_NAME, substr(SAMPLE_BARCODE, 1, 3), PLATE_COORDINATE from VGSM.SAMPLE 
+            where JOB_NAME in {pools_str}"""
         
         barcode_dict = {}
         con_wells_letter = self.globals['ACCUPLEX_WELLS'] + self.globals['QNOS_WELLS'] + self.globals['NEGCON_WELLS']
@@ -875,7 +870,6 @@ class Analysis:
             con_wells = tuple([(LETTERS.index(x[0]), int(x[1:]) - 1) for x in con_wells_letter])
             for x in con_wells:
                 barcode_matrix[x] = 'Con'
-            barcode_matrix = np.loadtxt(open("barcodes.csv", "r"), delimiter=",", dtype=str)
             for plate in self.plates:
                 self.plates[plate].barcodes_from_matrix(barcode_matrix)
                 self.plates[plate].data_as_df()
@@ -892,7 +886,7 @@ class Analysis:
                         if len(sample[1]) > 0:
                             sample = (sample[0], 'Con', sample[2])
                     barcode_dict[sample[0]].append(sample)
-            except ValueError:#cx_Oracle.DatabaseError:
+            except cx_Oracle.DatabaseError:
                 pass
             for plate in self.plates:
                 if self.plates[plate].pool != None:
@@ -924,7 +918,7 @@ class Analysis:
                     print("ERROR: Input must be a number")
         else:
             for plate in self.plates:
-                araya = f.get_araya(self.globals['ARAYA_QUERY'].replace('$plate', plate), self.cur)
+                araya = f.get_araya(plate, self.cur)
                 if not araya == None:
                     break
         if not araya == None:
@@ -949,6 +943,206 @@ class Analysis:
           Low ROX limit = {self.thresholds['ROX_LIMIT']}
           high ROX limit = {self.thresholds['HIGH_ROX']}""")
         self.html = self.html.replace('£araya£', araya)
+        
+    def _plate_read(filename, array_code, pool, glob : dict, thresholds, cur, filepath = './/Araya Files//') -> dict:
+        """
+        Takes an araya file from LIMS as a bytes object and reads all of the data into an data frame. Most of this code was written by Graham Hill.
+        The function also writes the araya file as a csv file to the specified filepath.
+        
+        Parameters:
+            file: An araya file represented as a bytes object obtained directly from the LIMS database.
+            df: A dictionary representing a data frame. This should have the following keys:
+                'readDate', arrayCode', 'FAM', 'VIC', 'ROX', 'Quadrant', 'x384well', 'x384row', 'x384col', 'x96row', 'x96col', 'x96well', 
+                'TapeID', 'n_FAM', 'n_VIC'.
+            filepath: The filepath in which to write the downloaded araya files.
+            
+        Returns:
+            A version of the dictionary df, which has had all of the araya file's data appended to it.
+        """
+        if type(filename) == str:
+            with open(filepath + filename, 'r') as file:
+                file = file.readlines()
+        else:
+            b_file = io.BytesIO(filename.read()).readlines()
+            #print(b_file)
+            file = []
+            for b_line in b_file:
+                line = b_line.decode()
+                file.append(line)
+        rawdat = file[1].split('-')[1]
+        date = rawdat[0:4]+":"+rawdat[4:6]+":"+rawdat[6:8]+":"+rawdat[8:10]+":"+rawdat[10:12]+":"+rawdat[12:14]
+        active = None
+        plate = bc.Plate(pool, array_code, glob, thresholds, date, cur)
+        FAM = []
+        VIC = []
+        ROX = []
+        for line in file:
+            line = line.replace('\n', '').replace('\r', '')
+            #print(line + '//end//')
+            #file is csv, split on comma
+            col = line.split(",")
+            #print(col)
+            if len(col) > 1:
+                if len(col) == 26 and active == "FAM":
+                    #grab the relevant fluo values as a list
+                    row = col[1:25]
+                    #append the list to the FAM list
+                    FAM.extend(row)
+                #Repeat for VIC and ROX
+                elif len(col) == 26 and active == "VIC":
+                    row = col[1:25]
+                    VIC.extend(row)
+                elif len(col) == 26 and active == "ROX":
+                    row = col[1:25]
+                    ROX.extend(row)	
+                elif "Date" == col[0]:
+                    rawdat = col[1].strip("-")
+                    date = rawdat[0:4]+":"+rawdat[4:6]+":"+rawdat[6:8]+":"+rawdat[8:10]+":"+rawdat[10:12]+":"+rawdat[12:14]
+                    plate.read_date = date
+                elif "Code" == col[0]:
+                    code = col[1]	
+                    plate.array_code = code[-6:]
+                #trigger for reading the FAM table and init FAM list
+                elif "FAM" == col[1]:
+                    active = "FAM"
+                #if the line is long enough to have fluo values and FAM is on, values go to FAM
+                elif "VIC" == col[1]:
+                    active = "VIC"
+                elif "ROX" == col[1]:
+                    active = "ROX"
+                #So all the FAM, VIC and ROX fluo values are stored by row and column in a list of lists
+            
+        idx = 0
+        for col in ("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P"):
+            for row in [str(x) for x in range(1, 25)]:
+                plate[col + row] = bc.Sample(int(float(FAM[idx])), int(float(VIC[idx])), int(float(ROX[idx])))
+                idx += 1
+        
+        # Write out the file as a .csv file incase the data scientist wants is:
+        if not type(filename) == str:
+            with open(filepath + rawdat + '_' + code.replace('.', '-') + '.csv', 'wb') as f:
+                f.writelines(b_file)
+                #for line in file:
+                #    f.write(line[0:len(line) - 1])
+        return plate
+
+    def _get_files(first : str, cur):
+        """
+        Finds and downloads any araya files in LIMS which are within the same batch as the first Tape ID which is supplied 
+        to the fuction
+        
+        Parameters
+        ----------
+            first : str
+                Any array code in the batch of plates to be downloaded (doesn't actually have to be the first in the batch)
+            cur : cx_Oracle cursor object
+                A cursor object from a connection to the LIMS mirror datbase
+        
+        Returns
+        -------
+            A list of tuples which contain the array code in the 0th index and the file itself (as a cx_Oracle.LOB object) in
+            the 1st index
+        """
+        first = int(first)
+        arrays = [x for x in range(first - 16, first + 16)]  # Generates all possible array codes in the batch
+        insert_str = ''
+        for array in arrays:
+            str_array = str(array) + '.csv'
+            while True:
+                if len(str_array) >= 10:
+                    break
+                str_array = '0' + str_array
+            insert_str += f"SWEEPER_LOG.ORIGINAL_FILENAME like '%{str_array}' or "  # Add possible array codes to the query
+        insert_str = insert_str[0:-4]
+
+        query = f"""
+        select substr(SWEEPER_LOG.ORIGINAL_FILENAME, 43),BLOB_VALUES.BLOB_FIELD from SWEEPER_LOG inner join BLOB_VALUES on
+        SWEEPER_LOG.ARCHIVED_FILE_BLOB = BLOB_VALUES.BLOB_ID where {insert_str}
+        """
+        all_files = lims_query(query, cur)
+        all_arrays = [int(x[0][0:6]) for x in all_files]
+        #print(arrays)
+
+        # This code filters out any arrays which are not in the same batch as the given array
+        wanted_arrays = []
+        lower = arrays[:16]
+        lower.reverse()
+        for array in lower:
+            if array in all_arrays:
+                wanted_arrays.append(all_files[all_arrays.index(array)])
+                
+            else:
+                break
+            
+        higher = arrays[16:]
+        for array in higher:
+            if array in all_arrays:
+                wanted_arrays.append(all_files[all_arrays.index(array)])
+            else:
+                break
+
+        return sorted(wanted_arrays, key=lambda x: x[0], reverse=False)
+    
+    def pipe(first : str, glob : dict, thresholds, cur, filepath = './/Araya Files//', from_files = False) -> dict:
+        """
+        This should probably be a method of the analysis class
+        Creates a dictionary from the raw data in the araya files located in the filepath. This can then be turned into a DataFrame.
+        
+        Parameters
+        ----------
+            first : str
+                The tape ID which is in the batch the user wants to analyse.
+            glob : dict
+                Contains the global variables for Pool Helper which are stored encrypted on the shared drive
+            thresholds : dict
+                Contains the thresholds for the current araya
+            cur: A cx_Oracle cursor object connected to the LIMS mirror database.
+            filepath : str
+                The location in which to save the array files which this function will download
+                NOTE: All files here will be overwritten if from_files is set to False
+            from_files : bool
+                Whether to run the function from araya files in the filepath directory. If False, this function will download 
+                files from the LIMS mirror using the first array code supplied to the function
+        
+        Returns
+        -------
+            A dictionary with the keys:
+                'readDate', arrayCode', 'FAM', 'VIC', 'ROX', 'Quadrant', 'x384well', 'x384row', 'x384col', 'x96row', 'x96col', 'x96well', 
+                'TapeID', 'n_FAM', 'n_VIC'
+        
+        This fuction is made from Graham's code in his 'PaulPipe script.
+        """
+        if not from_files:
+            for file in os.listdir(filepath):
+                os.remove(filepath + file)  # Deletes all arayas still in the araya files directory
+            files = _get_files(first, cur)
+            plates = {}
+            #extra bit for terminal
+        
+            for file in files:
+                pool = _get_pool(file[0][:6], cur)
+                plates[file[0][:6]] = _plate_read(file[1], int(file[0][:6]), pool, glob, thresholds, cur)
+        else:
+            plates = {}
+            plate_lst = []
+            for each_file in os.listdir(filepath):
+            #eliminate non-csv
+               if each_file.endswith(".csv"):
+            	#eliminate file-level duplicates
+                if " " in each_file:
+                    pass
+                else:
+                    if each_file[-10:-4] in plates.keys():
+                        pass
+                    else:
+                        pool = f.get_pool(each_file[-10:-4], cur)
+                        plate_lst.append([each_file, pool])
+               else:
+               	pass
+            plate_lst = sorted(plate_lst, key=lambda x: x[-10:-4], reverse=False)
+            for each_file in plate_lst:
+                plates[each_file[0][-10:-4]] = _plate_read(each_file[0], int(each_file[0][-10:-4]), each_file[1], glob, thresholds, cur, filepath = filepath)
+        return plates
           
     def _summary_buffer(self, df, plate_pos, plate_vic, plate_plods, previous_fam, previous_vic):
         """
@@ -1082,8 +1276,6 @@ class Analysis:
             A pd.DataFrame in the form of a buffer summary table containing the data for this plate batch's buffer summary
         """
         # These lists will form the columns for the buffer summary dataframe:
-        if not self.globals['BUFFER_SUMMARY']:
-            return pd.DataFrame({'Buffer summary disabled': []})
         df = dict(plates = list(self.plates.keys()),
             plate_type = [],
             read_date = [],
@@ -1163,9 +1355,6 @@ class Analysis:
                 if plate_obj.check_if_prio():
                     btn_str = f'<span style = "color:#e60000">{btn_str}</span>'
                     plate_str += ' (priority)'
-                if plate_obj.check_if_vip():
-                    btn_str = f'<span style = "color:#DC9202">{btn_str}</span>'
-                    plate_str += ' (VIP)'
                 
             self.html = self.html.replace('£new_plate_button£', self.globals['BUTTON_STRING'].replace(
                 '£plate£', str(plate)).replace('£btn_txt£', btn_str))
@@ -1174,7 +1363,6 @@ class Analysis:
                 plate_str += ' (<span style = "color:#e60000">restamped</span>)'
             
             self.html = self.html.replace('£new_plate_tab£', plate_obj.create_tab(plate_str))
-            self.plates[plate].df.to_csv('temp.csv')
         self.html = self.html.replace('£new_plate_button£', '').replace('£new_plate_tab£', '')  # Clean up the HTML string
         
         array_codes = [x for x in self.plates.keys()]
@@ -1188,10 +1376,6 @@ class Analysis:
         if not test:
             with open(f'.//Output//{str(min(array_codes))} - {str(max(array_codes))}.html', 'w', encoding = 'utf-8') as file:
                 file.write(self.html)  # Write the HTML output
-            if self.globals['SAVE_ANALYSIS']:
-                with open(f"//strjupiterflproduks01.file.core.windows.net//limsextract//poolHelper//Archive//{str(min(array_codes))} - {str(max(array_codes))}.html",
-                          'w', encoding = 'utf-8') as file:
-                    file.write(self.html)
         else:
             return self.html
             
