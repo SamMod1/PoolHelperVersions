@@ -1,0 +1,23 @@
+{% extends "poolFinder/base.html" %}
+
+{% block content %}
+<div class="col-md-10">
+    <h1>Query API<br><br></h1>
+    <form method="post">
+        {% csrf_token %}
+        <div class="psearch">
+            {{ form }}
+        </div>
+    </form>
+    <br>
+    <p>Note:<br><br>
+    You can enter and execute a query here, however it will just return raw text<br><br>
+    It's better to connect via python to query the database<br><br>
+    This query will be read-only</p>
+</div>
+<script>
+    var input = document.getElementById('id_psearch');
+    input.focus();
+    input.select();
+</script>
+{% endblock content %}

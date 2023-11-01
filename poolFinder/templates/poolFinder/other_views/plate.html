@@ -1,0 +1,85 @@
+{% extends "poolFinder/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="col-md-10">
+    <div>
+        {% if plate.pool == "None" %}
+            <h1 style="font-family:arial;color:#098809">Plate {{ plate.array_code }} (Possible Buffer)
+        {% elif plate.vip %}
+            <h1 style="font-family:arial;color:#929701">Plate {{ plate.array_code }} (VIP)
+        {% elif plate.prio %}
+            <h1 style="font-family:arial;color:#bb0903">Plate {{ plate.array_code }} (Priority)
+        {% else %}
+            <h1 style="font-family:arial">Plate {{ plate.array_code }}
+        {% endif %}
+        {% if plate.repooled %}
+            (Repooled)</h1>
+        {% elif plate.restamped %}
+            (Restamped)</h1>
+        {% else %}
+            </h1>
+        {% endif %}
+        <script src="{% static 'poolFinder/plotly.js' %}"></script>
+        {{ plate.x384_platemap|safe }}
+    </div>
+    {% if big_batch %}
+        <br><br><br>
+    {% endif %}
+
+    <div class="grid-container">
+        <div>{{ plate.q1_platemap|safe }}</div>
+        <div>{{ plate.q2_platemap|safe }}</div>
+        <div>{{ plate.q3_platemap|safe }}</div>  
+        <div>{{ plate.q4_platemap|safe }}</div>
+    </div>
+    <div>
+        <span style="font-size:20px;font-family:arial">
+            {% if plate.pool == 'None' %}
+                Plate Info and Blank Samples Summary:
+            {% else %}
+                Plate Info and Patient Samples Summary:
+            {% endif %}
+        </span><br><br>
+        {{ plate.plate_info|safe }}
+        <br>
+        {% if plate.pool == 'None' %}
+            <p>(Plate instruments inferred from the instruments associated with the first plate in this batch)</p>
+        {% endif %}
+        <br>
+        <span style="font-size:20px;font-family:arial">ROX BOX:</span><br><br>
+        {{ plate.roxbox|safe }}<br><br>
+        <span style="font-size:20px;font-family:arial">Escalations:</span><br><br>
+        {% for escalation in escalations %}
+            <span style="font-size:16px;font-family:arial">{{ escalation }}</span><br>
+        {% endfor %}
+        <span style="font-size:16px;font-family:arial">NOTE: This is not an exhaustive list and service guidance escations are not considered.</span><br>
+    </div>
+    <div class="grid-container">
+        <div>{{ plate.rox_v_fam_scatter|safe }}</div>  
+        <div>{{ plate.rox_v_nfam_scatter|safe }}</div>
+        <div>{{ plate.rox_v_vic_scatter|safe }}</div>
+        <div>{{ plate.rox_v_nvic_scatter|safe }}</div>
+        <div>{{ plate.nfam_v_nvic_scatter|safe }}</div>
+        <div class="escalation-form">
+            <h4><br>Append Escalation to Plate:<br><br></h4>
+            <form method="post">
+                {% csrf_token %}
+                {{ form.as_p }}
+                <input type="submit" value="Append Escalation">
+            </form>
+        </div>
+    </div>
+    <div>
+        <span style="font-size:30px;font-family:arial">LIMS comments<br>
+        </span><span style="font-size:22px;font-family:arial">{{ plate.pl_comments|safe }}</span>
+    </div>
+</div>
+{% endblock content %}
+
+
+{% block batchnav %}
+
+    {{ batch_nav|safe }}
+
+{% endblock batchnav %}

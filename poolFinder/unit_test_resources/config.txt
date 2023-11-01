@@ -1,0 +1,228 @@
+@IS_UNITTEST@
+@True@
+
+@x96_CONTROL_WELLS@
+@7,11 7,10 7,9@
+
+@config guide@
+@This is the guide for this config detailing what each option does:
+
+
+x96_CONTROL_WELLS: 96 plate level control well positions given as 0-indexed indices (e.g. 7,11 7,10 7,9)
+
+STRIPE_LIMIT: two numbers, the first is the minimum horizontal stripe size at which a stripe is flagged up, the second is the minimum  vertical stripe size to flag up
+
+STIPE_CHECK_LIMIT: The positivity rate (%) at which to check a plate for stripes
+
+SOP_nVIC_ESCALATION_LIMIT & SOP_ROX_FAIL_LIMIT & SOP_PLOD_LIMIT: Two numbers, the first is the number of failures at which to escalate, the second is the escalation level (see SOP)
+
+QNOS_WELLS: The 384-level wells into which the Qnostic Positive control is placed
+
+PRIO_CODES: Priority barcode prefixes (e.g. AVA)
+
+POOL_QUERY: The SQL query used to get the POOL IDs associated with a list of array codes
+
+NON_PATIENT_CODES: Any barcode prefixes which are not patient barcodes (must include an empty prefix (, , ))
+
+NEGCON_WELLS: The 384-level wells into which the Qnostic Negative control is placed
+
+MM_RULE_MIN_ROX_MODIFIER: This number is taken away from the araya's HIGH_ROX value (defined in araya thresholds) to get the minimum ROX at which to check for MM-Only signals
+
+MM_RULE_MAX_nVIC_MODIFER: This number is added to the araya's nVIC_NEGATIVE threshold to get the maximum nVIC at which to check for MM-Only signals
+
+MM_RULE_FAM_TO_VIC_LIMITS: Two numbers which define the FAM / VIC range within which to flag up mastermix only signals
+
+LY_EL_QUERY: SQL query which returns lysis and elution plates associated with certain wells on a 384-well plate
+
+INSTRUMENTS_QUERY: SQL query which returns the instruments associated with plates
+
+GRAPH_LINE_SIZE: The size of the threshold lines on the scatter charts
+
+GET_FILES_WHERE: A section of an SQL query which is used to build a larger query to get araya files from the LIMS sweeper
+
+GET_FILES_MAIN: The main body of the SQL query to get araya files from the LIMS sweeper
+
+ESCALATION_REASONS: A list of selectable escalation reasons for plates in Pool Helper's dropdown menus
+
+COMMENTS_QUERY: SQL query which gets LIMS comments from a list of plates
+
+BUFFER_PREFFIX: A barcode prefix which is to be considered as a blank well
+
+BATCHNAV_MAIN: Some HTML to create a list of links to different plates
+
+BATCHNAV_ITEM: Small snipped of HTML to be inserted into BATCHNAV_MAIN
+
+BARCODES_QUERY: SQL query which is used to get the barcode prefixes on POOL plates
+
+ACCUPLEX_WELLS: The 384-level wells into which the Accuplex Positive control is placed@
+
+@STRIPE_LIMIT@
+@4, 5@
+
+@STIPE_CHECK_LIMIT@
+@22@
+
+@SOP_nVIC_ESCALATION_LIMIT@
+@21, 3@
+
+@SOP_ROX_FAIL_LIMIT@
+@3, 2@
+
+@SOP_PLOD_LIMIT@
+@385, consult service guidance@
+
+@ACCUPLEX_WELLS@
+@O19, O20, P19, P20@
+
+@BACKGROUND_COLOUR@
+@rgb(235,235,235)@
+
+@BARCODES_QUERY@
+@select JOB_NAME, substr(SAMPLE_BARCODE, 1, 3), PLATE_COORDINATE from VGSM.SAMPLE where JOB_NAME in $pools@
+
+@BATCHNAV_ITEM@
+@<a href="/Pool-Helper/plate/$ref$/" class="list-group-item list-group-item-action bg-light $text_color$ font-weight-bold">$button_name$</a>@
+
+@BATCHNAV_MAIN@
+@<div class="col-md">
+        <div class="content-batchnav">
+        <h3>Batch Navigation</h3>
+        <p class='text-muted'>
+            <div class="d-flex" id="wrapper">
+                <div class="bg-light border-right" id="sidebar-wrapper">
+               
+                <div class="list-group list-group-flush">
+                    $items$
+               </div>
+            </div>
+        </div>
+        </p>
+        </div>
+    </div>@
+
+@BUFFER_PREFFIX@
+@_NONE_@
+
+@COMMENTS_QUERY@
+@select COMMENTS, JOB_HEADER from C19_JOB_COMMENTS where JOB_HEADER in $all_plates@
+
+@ESCALATION_REASONS@
+@No Escalation
+Suspicious pattern or stripe (location of stripe in comment)
+PLODs with high nFAM
+High number of PLODs
+Passive dye failures
+Other ROX issues (details in comment)
+Environmental contamination
+Positive control failures
+Negative control failure
+Other (detail in comment)@
+
+@GET_FILES_MAIN@
+@select substr(SWEEPER_LOG.ORIGINAL_FILENAME, 43),BLOB_VALUES.BLOB_FIELD from SWEEPER_LOG inner join BLOB_VALUES on SWEEPER_LOG.ARCHIVED_FILE_BLOB = BLOB_VALUES.BLOB_ID where $where_clause@
+
+@GET_FILES_WHERE@
+@SWEEPER_LOG.ORIGINAL_FILENAME like '%$array_code' or @
+
+@GRAPH_LINE_SIZE@
+@3@
+
+@INSTRUMENTS_QUERY@
+@select VALUE, JOB from JOB_PARAMETER where JOB in $plates@
+
+@LY_EL_QUERY@
+@select JOB_NAME, LYSIS_PLATE, ELUTION_PLATE, PLATE_COORDINATE from SAMPLE where JOB_NAME in $pools and PLATE_COORDINATE in $wells@
+
+@MIRROR_PASSWORD@
+@exOsfwt16d1e1Cvg@
+
+@MIRROR_USERNAME@
+@SAM_MODERN@
+
+@MM_RULE_FAM_TO_VIC_LIMITS@
+@1.25, 2.75@
+
+@MM_RULE_MAX_nVIC_MODIFIER@
+@0.5@
+
+@MM_RULE_MIN_ROX_MODIFIER@
+@1000@
+
+@NEGCON_WELLS@
+@O21, O22, P21, P22@
+
+@NON_PATIENT_CODES@
+@Con, , SPA, ENV@
+
+@PLATES_IN_FF_QUERY@
+@select ARRAY_CODE, JOB_NAME from JOB_HEADER where JOB_STATUS = 'V' and PCR_STATE = 'FF'@
+
+@POOL_QUERY@
+@select ARRAY_CODE, JOB_NAME from JOB_HEADER where ARRAY_CODE in $array_codes$ $or$ select ARRAY_CODE, JOB_NAME from JOB_HEADER where ARRAY_CODE = '$array_code$'@
+
+@PRIO_CODES@
+@PRK, AVA@
+
+@QNOS_WELLS@
+@O23, O24, P23, P24@
+
+@REPOOL_QUERY_1PLATE@
+@select ELUTION_PLATE from VGSM.COMPRESSION_JOIN where ELUTION_PLATE = '$elute_list$'@
+
+@REPOOL_QUERY_MULTIPLATE@
+@select ELUTION_PLATE from VGSM.COMPRESSION_JOIN where ELUTION_PLATE in $elute_list$@
+
+@REPOOL_RESTAMP_QUERY@
+@select JOB_NAME, C19_REPOOLED, C19_RESTAMPED from JOB_HEADER where JOB_NAME in $plates$@
+
+@RESTAMP_QUERY@
+@select distinct j.job_name
+from vgsm.sweeper_log s, vgsm.blob_values b, vgsm.job_header j
+where b.blob_id=s.archived_file_blob and s.original_filename like '%PipetteLog%' and s.log_time >= to_date('$from_date$','yyyy-mm-dd') and s.log_time <= to_date('$to_date$','yyyy-mm-dd')
+and j.job_name=substr(UTL_RAW.CAST_TO_VARCHAR2(DBMS_LOB.SUBSTR(b.blob_field, 600,1)),
+instr(UTL_RAW.CAST_TO_VARCHAR2(DBMS_LOB.SUBSTR(b.blob_field, 600,1)),'<PLATECODE>')+11,12)
+and j.job_name in
+( select j1.job_name from vgsm.job_header j1, vgsm.sweeper_log s1, vgsm.blob_values b1 where b1.blob_id=s1.archived_file_blob and s1.original_filename like '%PipetteLog%' and j1.job_name=substr(UTL_RAW.CAST_TO_VARCHAR2(DBMS_LOB.SUBSTR(b1.blob_field, 600,1)),
+instr(UTL_RAW.CAST_TO_VARCHAR2(DBMS_LOB.SUBSTR(b1.blob_field, 600,1)),'<PLATECODE>')+11,12)
+group by j1.job_name having count(*)>1 )
+/* and s.original_filename not in ( select s2.original_filename from vgsm.sweeper_log s2 where s2.original_filename like '%PipetteLog%' group by (s2.original_filename ) having count(*)>1 ) */@
+
+@SAMPLES_RELEASED_QUERY@
+@select distinct JOB_NAME, ID_NUMERIC, substr(ID_TEXT, 1, 3) from SAMP_TEST_RESULT where JOB_NAME in $plates$ and SAMPLE_TYPE = 'REGULAR' and STATUS = 'A'@
+
+@REFRESH_RATE@
+@20@
+
+@EGGS_OF_EASTER@
+@⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬜⬜⬜⬛⬜<br>
+⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬛⬛⬛⬛⬛⬛⬜⬜⬜⬜⬛⬜<br>
+⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬜<br>
+⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬜<br>
+⬜⬜⬜⬜⬜⬜⬜⬜⬛⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬜<br>
+⬜⬜⬜⬜⬜⬜⬛⬛⬛🏽⬛⬜⬜⬜⬜⬜⬜⬜⬜⬛⬛⬛⬜⬜⬜⬜⬜⬜⬜⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬜<br>
+⬜⬜⬜⬜⬜⬛🟥🟥⬛🏽🏽⬛⬜⬜⬜⬜⬜⬛⬛⬜⬜⬜⬛⬛⬛⬛⬜⬜⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬜⬜<br>
+⬜⬜⬜⬜⬜⬛🟥🟧🟧⬛🏽🏽⬛⬜⬜⬜⬛⬜⬜⬛⬜⬜⬜⬜⬜⬜⬛⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬛⬜⬜⬜<br>
+⬜⬜⬜⬛⬛🟥🟥🟧🟨🟨⬛🏽🏽⬛⬜⬛🟧⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬜⬛⬜⬜⬜<br>
+⬜⬜⬛🟥🟥🟥🟧🟨🟨🟩🟩⬛🏽🏽⬛⬛🟧🟧⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬜⬜⬜<br>
+⬜⬛🟥🟥🟧🟧🟧🟨🟩🟩🟩🟦⬛🏽⬛🟧🟧🟧🟧⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬜⬜⬜<br>
+⬛🟥🟥🟧🟧🟨🟨🟩🟩🟩🟦🟦🟦⬛🟧🟧🟧🟧🟧⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬜⬜⬜<br>
+⬛🟥🟧🟧🟨🟨🟩🟩🟩🟦🟦🟦⬛🟧🟧🟧🟧🟧🟧🟧⬜⬜⬜⬛⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬜⬜<br>
+⬛🟥🟧🟨🟨🟩🟩🟦🟦🟦🟦🟪🟪⬛⬛🟧🟧🟧⬛⬛⬛⬛⬛⬜⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬜⬜<br>
+⬜⬛🟨🟨🟩🟩🟦🟦🟦🟪🟪🟪🟪⬛⬜⬛⬛⬛🏽⬛⬜⬜⬜⬜⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬜⬜<br>
+⬜⬛🟩🟩🟩🟦🟦🟪🟪🟪🟪🟪⬛⬜⬜⬜⬜⬛🏽🏽⬛⬜⬜⬜⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬜<br>
+⬜⬜⬛🟩🟦🟦🟪🟪⬛⬛⬛⬛⬜⬜⬜⬜⬜⬜⬛🏽⬛⬜⬜⬜⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬜<br>
+⬜⬜⬜⬛🟦🟪🟪⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬛⬜⬜⬜⬜⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜🟧⬛⬜⬜<br>
+⬜⬜⬜⬜⬛🟪🟪⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛🟧🟧⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛🟧🟧⬛⬜<br>
+⬜⬜⬜⬜⬜⬛🟪⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛🟧🟧🟧⬛⬜⬜⬜⬛⬛⬛⬛⬛⬛⬛⬛⬛⬛🟧🟧🟧⬛<br>
+⬜⬜⬜⬜⬜⬜⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬛⬛🟧🟧🟧🟧⬛⬛⬛⬛⬜⬜⬜⬜⬜⬜⬜⬜⬛⬛🟧🟧🟧⬛<br>
+⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛🟧🟧🟧🟧🟧🟧⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛🟧🟧🟧🟧⬛<br>
+⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛🟧🟧🟧🟧🟧🟧🟧⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛🟧🟧🟧🟧⬛<br>
+⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛🟧🟧🟧🟧🟧⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛🟧🟧🟧🟧⬛<br>
+⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛🟧🟧🟧🟧⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛🟧🟧🟧⬛<br>
+⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬛⬛⬛⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬜⬛⬛⬛⬛⬜<br>
+$$@
+
+@DISPLAY_LEVY_JENNINGS@
+@FALSE@
+
+@

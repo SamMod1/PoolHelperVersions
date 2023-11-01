@@ -1,0 +1,14 @@
+{% extends "poolFinder/base.html" %}
+
+{% block content %}
+<div>
+    <h1>Modifying: {{ plates }}</h1>
+    <br><br>
+    <h2>Escalate Plate(s):</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="submit" value="Add Escalation">
+    </form>
+</div>
+{% endblock content %}

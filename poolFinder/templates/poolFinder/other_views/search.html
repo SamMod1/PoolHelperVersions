@@ -1,0 +1,23 @@
+{% extends "poolFinder/base.html" %}
+
+{% block content %}
+<div class="col-md-10">
+    <h1>Plate Search<br><br></h1>
+    <form method="post">
+        {% csrf_token %}
+        <div class="psearch">
+            {{ form }}
+        </div>
+    </form>
+    <br>
+    <p>Note:<br><br>
+    You can search for plates using either array codes or pool IDs.<br><br>
+    You can also search for multiple plates by seperating each plate name with a hyphen (-).<br><br>
+    If searching for multiple plates, you must use either pool IDs or array codes in your search, not a mixture of the two</p>
+</div>
+<script>
+    var input = document.getElementById('id_psearch');
+    input.focus();
+    input.select();
+</script>
+{% endblock content %}

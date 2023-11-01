@@ -1,0 +1,50 @@
+{% extends "poolFinder/base.html" %}
+
+{% block content %}
+{% if insert %}<div>{{ insert|safe }}</div>{% endif %}
+<div class="col-md-10">
+    <h1>Search Results<br><br></h1>
+    <article class="media content-heading">
+        <div class="media-body">
+        <div class="article-metadata">
+        <div class="wrapper">
+            <div><h2 class="text-secondary">Plate name</h2></div>
+            <div><h2 class="text-secondary">Time arrived</h2></div>
+            <div><h2 class="text-secondary">Batch</h2></div>
+        </div></div></div>
+    </article>
+    {% if plates %}
+        {% for plate in plates %}
+            <article class="media content-section">
+                <div class="media-body">
+                <div class="article-metadata">
+                    <div class="wrapper">
+                        <div>
+                            <span class="mr-2" style="color:black">{{ plate.pool }}</span>
+                            <small class="text-muted"></small>
+                        </div>
+                        <div>
+                        {% if plate.escalated %}
+                            <span style="float:left;"><small class="text-primary">Escalated: {{ plate.escalation_reason }}</small></span>
+                        {% else %}
+                            <span style="float:left;"><small class="text-secondary">Not escalated</small></span>
+                        {% endif %}
+                        </div>
+                        <div>
+                            <span style="float:right;"><small class="text-secondary">In FastFinder: {{ plate.in_ff }}</small></span>
+                        </div>
+                    </div>
+                </div>
+                    <div class="wrapper">
+                        <div><h2><a class="article-title" href="{% url 'Pool Helper-Plate' plate.array_code %}">{{ plate.array_code }}</a></h2></div>
+                        <div><h4>{{ plate.date_in|date:"d/m/Y H:i" }}</h4></div>
+                        <div><h4>{{ plate.batch }}</h4></div>
+                    </div>
+                </div>
+            </article>
+        {% endfor %}
+    {% else %}
+        <h3 style="color:red">No plates in Pool Helper matched the search term: {{ search_term }}</h3>
+    {% endif %}
+</div>
+{% endblock content %}

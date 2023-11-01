@@ -1,0 +1,114 @@
+{% extends "poolFinder/base.html" %}
+
+{% block head_block %}
+<meta http-equiv="refresh" content="{{ refresh_rate }}">
+{% endblock head_block %}
+
+{% block content %}
+<h1>Plates In FastFinder<br><br></h1>
+{% if plates %}
+    <div class="col-md-12">
+        <form method="post">
+            {% csrf_token %}
+            <div class="wrapper-plates-in-ff">
+                <div>
+                    <article class="media content-heading">
+                        <div class="media-body">
+                        <div class="article-metadata">
+                        <div class="wrapper">
+                            <div><h2 class="text-secondary">Plate name</h2></div>
+                            <div><h2 class="text-secondary">Time arrived</h2></div>
+                            <div><h2 class="text-secondary">Batch</h2></div>
+                        </div></div></div>
+                    </article>
+                </div>
+                <div>
+                    <div class="wrapper-plates-in-ff">
+                        <h5>Escalate / Hide plate or plates</h5><br>
+                        <p class="hide_escalate">{{ plate_select_form|get_field:"choice" }}
+                        <span class="submit-button"><input type="submit" value="Go"></p>
+                    </div>
+                </div>
+            </div>
+            {% for plate in plates %}
+                {% if plate.pool %}
+                <div class="wrapper-plates-in-ff">
+                    <div>
+                        <article class="media content-section">
+                            <div class="media-body">
+                            <div class="article-metadata">
+                                <div class="wrapper">
+                                    <div>
+                                        <span class="mr-2" style="color:black">{{ plate.pool }}</span>
+                                        <small class="text-muted"></small>
+                                    </div>
+                                    <div>
+                                    {% if plate.escalated %}
+                                        <span style="float:left;"><small class="text-primary">Escalations: {{ plate.escalation_reason|replace:"$$|, "|slice:":-2" }}</small></span>
+                                    {% else %}
+                                        <span style="float:left;"><small class="text-secondary">Not escalated</small></span>
+                                    {% endif %}
+                                    </div>
+                                    <div>
+                                    {% if plate.vip %}
+                                        <span style="float:right;"><small class="text-warning">VIP</small></span>
+                                    {% elif plate.prio %}
+                                        <span style="float:right;"><small class="text-danger">Priority</small></span>
+                                    {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                                <div class="wrapper">
+                                    <div><h2><a class="article-title" href="{% url 'Pool Helper-Plate' plate.array_code %}">{{ plate.array_code }}</a></h2></div>
+                                    <div><h4>{{ plate.date_in|date:"d/m/Y H:i" }}</h4></div>
+                                    <div><h4>{{ plate.batch }}</h4></div>
+                                </div>
+                            </div>
+                        </article>
+                    </div>
+                    <div class="content-section-small"><br>
+                        <h6><a href="{% url 'Pool Helper-Modify Plate' plate.array_code %}">Escalate</a>&nbsp;&nbsp;&nbsp;&nbsp;
+                        Select: {{ plate_select_form|get_field:plate.array_code }}</h6>
+                    </div>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </form>
+    </div>
+    
+{% else %}
+    {% if killroy %}
+        <div class="kilroy">
+            <h1><br><br><br><br>
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp\|||/<br>
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp(<span>o o</span>)<br>
+            -----ooO-(_)-Ooo-------<br>
+            &nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbspwot no data?</h1>
+        </div>
+    {% else %}
+        <div class="col-md-12">
+            <form method="post">
+                {% csrf_token %}
+                <div class="wrapper-plates-in-ff">
+                    <div>
+                        <article class="media content-heading">
+                            <div class="media-body">
+                            <div class="article-metadata">
+                            <div class="wrapper">
+                                <div><h2 class="text-secondary">Plate name</h2></div>
+                                <div><h2 class="text-secondary">Time arrived</h2></div>
+                                <div><h2 class="text-secondary">Batch</h2></div>
+                            </div></div></div>
+                        </article>
+                    </div>
+                    <div>
+                        <div class="wrapper-plates-in-ff">
+                            <h5>Escalate / Hide plate or plates</h5><br>
+                            <p class="hide_escalate">{{ plate_select_form|get_field:"choice" }}
+                            <span class="submit-button"><input type="submit" value="Go"></p>
+                        </div>
+                    </div>
+                </div>
+    {% endif %}
+{% endif %}
+{% endblock content %}

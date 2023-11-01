@@ -1,0 +1,75 @@
+{% extends "poolFinder/base.html" %}
+
+{% block head_block %}
+<meta http-equiv="refresh" content="{{ refresh_rate }}">
+{% endblock head_block %}
+
+{% block content %}
+
+<div class="col-md-10">
+    <h1>Batches Awaiting Release<br><br></h1>
+    <article class="media content-heading">
+        <div class="media-body">
+        <div class="article-metadata">
+        <div class="wrapper">
+            <div><h2 class="text-secondary">Batch name</h2></div>
+            <div><h2 class="text-secondary">Time arrived</h2></div>
+            <div><h2 class="text-secondary">Uploaded by</h2></div>
+        </div></div></div>
+    </article>
+    
+    {% for batch in batches %}
+        <article class="media content-section">
+            <div class="media-body">
+            <div class="article-metadata">
+                <div class="wrapper">
+                    <div>
+                        <span style="float:left;"><small class="text-secondary">Prio plates: {{ batch.prio_plates }}
+                        {% if not batch.prio_plates %}
+                            None
+                        {% endif %}</small></span>
+                    </div>
+                    <div>
+                        <span style="float:left;"><small class="text-secondary">Plates to do: {{ batch.plates_to_do }}
+                    {% if not batch.plates_to_do %}
+                        None
+                    {% endif %}</small></span>
+                    </div>
+                    <div>
+                        <span style="float:right;"><small class="text-secondary">Escalations: {{ batch.escalations }}
+                        {% if not batch.escalations %}
+                            None
+                        {% endif %}</small></span>
+                    </div>
+                </div>
+            </div>
+                <div class="wrapper">
+                    <div><h2><a class="article-title" href="{% url 'Pool Helper-Batch Overview' batch.batch %}">{{ batch.batch }}</a></h2></div>
+                    <div><h4>{{ batch.batch_time|date:"d/m/Y H:i" }}</h4></div>
+                    <div><h4>{{ batch.uploaded_by }}</h4></div>
+                </div>
+            </div>
+        </article>
+    {% endfor %}
+</div>
+<div class="col-md-2">
+    <h1>Manually upload batch</h1><br><br>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <p>First choose the araya:<br>
+        {{ araya_choice|safe }}</p>
+        <p>Then, either choose to upload files manually or enter one array code in the batch you want to analyse (like in Pool Helper version 2)</p><br>
+        <p><input name="upload" type="file" multiple>
+        <button type="submit">Upload file(s)</button><br>
+        Files should be properly formatted araya files, ideally all files in the batch should be uploaded</p><br>
+        {% if message_to_user %}
+        <p class="text-danger">{{ message_to_user }}</p>
+        {% endif %}
+        <th><label for="array_search">Enter array code:</label></th>
+        <td><input type="text" name="array_search" maxlength="6" id="array_search"></td>
+        <br><br><p>Note: araya choice will be over-ridden if any of the batch's plates are in LIMS. <br>
+            There's also a slight bug with attaching files. If it doesn't work, try again</p>
+    </form>
+</div>
+
+{% endblock content %}

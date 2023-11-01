@@ -1,0 +1,88 @@
+<!-- 
+IDEAS FOR PAGE:
+Levy-Jennings
+Blank well contaminations
+-->
+
+
+{% extends "poolFinder/base.html" %}
+{% load static %}
+
+{% block content %}
+<div class="col-md-8">
+    <p><div class="art">██████╗░░█████╗░░█████╗░██╗░░░░░&nbsp&nbsp&nbsp&nbsp██╗░░██╗███████╗██╗░░░░░██████╗░███████╗██████╗░<br>
+    ██╔══██╗██<span style = "color:blue;">███</span>██╗██<span style = "color:blue;">███</span>██╗██║░░░░░&nbsp&nbsp&nbsp&nbsp██║░░██║██╔════╝██║░░░░░██╔══██╗██╔════╝██╔══██╗<br>
+    ██████╔╝██<span style = "color:blue;">███</span>██║██<span style = "color:blue;">███</span>██║██║░░░░░&nbsp&nbsp&nbsp&nbsp███████║█████╗░░██║░░░░░██████╔╝█████╗░░██████╔╝<br>
+    ██╔═══╝░██<span style = "color:blue;">███</span>██║██<span style = "color:blue;">███</span>██║██║░░░░░&nbsp&nbsp&nbsp&nbsp██╔══██║██╔══╝░░██║░░░░░██╔═══╝░██╔══╝░░██╔══██╗<br>
+    ██║░░░░░╚█████╔╝╚█████╔╝███████╗&nbsp&nbsp&nbsp&nbsp██║░░██║███████╗███████╗██║░░░░░███████╗██║░░██║<br>
+    ╚═╝░░░░░░╚════╝░░╚════╝░╚══════╝&nbsp&nbsp&nbsp&nbsp╚═╝░░╚═╝╚══════╝╚══════╝╚═╝░░░░░╚══════╝╚═╝░░╚═╝</div>Data Analysis Tool<br>Version: 2.CAN</p>
+    <br>
+    <h1>---------------------------------------------------------</h1>
+    <div>
+        <h1>Daily Summary:</h1><br>
+        <h3 style="color:black">
+            {% for stat in day_summary_stats %}
+                {{ stat.0 }}
+                {{ stat.1 }}
+                <br><br>
+            {% endfor %}
+        </h3>
+    </div>
+    <h1>---------------------------------------------------------</h1>
+    <div>
+        <h1>Levy-Jennings:</h1><br>
+        <h3>Araya 1:</h3>
+        <script src="{% static 'poolFinder/plotly.js' %}"></script>
+        {{ levy_jennings_a1|safe }}<br>
+        <h3>Araya 2:</h3>
+        {{ levy_jennings_a2|safe }}
+    </div>
+</div>
+
+<div class="col-md-2">
+    <p>
+    <div class="art">
+        ░░░░░░░░▄▄▄▀▀▀▄▄███▄░░░░░░░░░░░░░░<br>
+        ░░░░░▄▀▀<span style="color:orange">▒▒▒▒▒▒▒</span>▐░▀██▌░░░░░░░░░░░░░<br>
+        ░░░▄▀<span style="color:orange">▒▒▒▒</span>▄▄███░▌▀▀<span style="color:yellow">░</span>▀█░░░░░░░░░░░░░<br>
+        ░░▄█<span style="color:orange">▒▒</span>▄▀▀<span style="color:orange">▒▒▒▒▒</span>▄▐<span style="color:yellow">░░░░</span>█▌░░░░░░░░░░░░<br>
+        ░▐█▀▄▀▄▄▄▄▀▀▀▀▌<span style="color:yellow">░░░░░</span>▐█▄░░░░░░░░░░░<br>
+        ░▌▄▄▀▀░░░░░░░░▌<span style="color:yellow">░░░░</span>▄███████▄░░░░░░<br>
+        ░░░░░░░░░░░░░▐<span style="color:yellow">░░░░</span>▐███████████▄░░░<br>
+        ░░░░░░░░░░░░░░▐<span style="color:yellow">░░░░</span>▐█████████████▄<br>
+        ░░░░░░░░░░░░░░░▀▄<span style="color:yellow">░░░</span>▐█████████████▄ <br>
+        ░░░░░░░░░░░░░░░░▀▄▄███████████████ <br>
+        ░░░░░░░░░░░░░░░░░░░░░█▀██████░░░░░<br>
+    </p>
+    </div>
+    <br><br>
+    <div>
+        <h3>
+            Contamination of blank wells today:
+        </h3>
+        <br>
+        <div>
+            <table border="1" class="dataframe">
+                <thead>
+                <tr style="text-align: right;">
+                    <th class="blue-background">Plate</th>
+                    <th class="blue-background">Positive Contamination Wells</th>
+                    <th class="blue-background">PLOD Contamination Wells</th>
+                    <th class="blue-background">Plate Type</th>
+                </tr>
+                </thead>
+                <tbody>
+                    {% for plate in daily_contams %}
+                        <tr>
+                            <td><a class="article-title" href="{% url 'Pool Helper-Plate' plate.0 %}">{{ plate.0 }}</a></td>
+                            <td>{{ plate.1 }}</td>
+                            <td>{{ plate.2 }}</td>
+                            <td>{{ plate.3 }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+    </div>
+    </div>
+</div>
+{% endblock content %}

@@ -1,0 +1,16 @@
+Stripe,Stripe,None,None,Stripe,Stripe,VIC fail,VIC fail,None,None,PLOD,PLOD,None,None,None,None,None,None,ROX fail,ROX fail,None,None,None,None
+Stripe,Contam,None,None,Stripe,Contam,VIC fail,None,None,Contam,PLOD,Contam,None,None,None,None,None,None,ROX fail,ENV ROX,None,None,None,None
+Stripe,Stripe,None,None,Stripe,Stripe,VIC fail,VIC fail,None,None,PLOD,PLOD,None,None,None,None,None,None,ROX fail,ROX fail,None,None,None,None
+Stripe,Contam,None,None,Stripe,Contam,VIC fail,None,None,Contam,PLOD,Contam,None,None,None,None,None,None,ROX fail,ENV ROX,None,None,None,None
+Stripe,Stripe,None,None,Stripe,Stripe,VIC fail,VIC fail,None,None,PLOD,PLOD,None,None,VIC fail,VIC fail,None,None,ROX fail,ROX fail,None,None,None,None
+Stripe,Contam,None,None,Stripe,Contam,VIC fail,None,HI PLOD,Contam,PLOD,Contam,None,None,VIC fail,None,None,None,ROX fail,ENV ROX,None,None,None,None
+Stripe,Stripe,None,None,Stripe,Stripe,VIC fail,VIC fail,HI PLOD,HI PLOD,PLOD,PLOD,None,None,VIC fail,VIC fail,None,None,ROX fail,ROX fail,None,None,None,None
+Stripe,Contam,None,None,Stripe,Contam,VIC fail,None,HI PLOD,Contam,PLOD,Contam,None,None,VIC fail,None,None,None,ROX fail,ENV ROX,None,None,None,None
+Stripe,Stripe,None,None,Stripe,Stripe,VIC fail,VIC fail,HI PLOD,HI PLOD,PLOD,PLOD,None,None,VIC fail,VIC fail,None,None,ROX fail,ROX fail,None,None,None,None
+Stripe,Contam,None,None,Stripe,Contam,VIC fail,None,HI PLOD,Contam,PLOD,None,None,None,VIC fail,None,None,None,ROX fail,ENV ROX,None,None,None,None
+Stripe,Stripe,None,None,Stripe,Stripe,VIC fail,VIC fail,PLOD,PLOD,None,None,None,None,VIC fail,VIC fail,None,None,ROX fail,ROX fail,None,None,None,None
+Stripe,Contam,None,None,Stripe,Contam,VIC fail,None,PLOD,Contam,None,None,None,None,VIC fail,None,None,None,ROX fail,ENV ROX,None,None,None,None
+Stripe,Stripe,None,None,Stripe,Stripe,VIC fail,VIC fail,PLOD,PLOD,None,None,None,None,VIC fail,VIC fail,None,None,ROX fail,ROX fail,None,None,None,None
+Stripe,Contam,None,None,Stripe,Contam,VIC fail,None,PLOD,Contam,None,None,None,None,VIC fail,None,None,None,ROX fail,ENV ROX,None,None,None,None
+Stripe,Stripe,None,None,Stripe,Stripe,VIC fail,VIC fail,PLOD,PLOD,None,None,None,None,VIC fail,VIC fail,ROX fail,ROX fail,Pos fail,Pos fail,Neg fail,Neg fail,Pos fail,Pos fail
+Stripe,Contam,None,None,Stripe,Contam,VIC fail,None,PLOD,Contam,None,None,None,None,VIC fail,None,ROX fail,ENV ROX,VIC accu,Contam,ROX negcon,ENV ROX,ROX qnos,Contam

@@ -1,0 +1,83 @@
+{% extends "poolFinder/base.html" %}
+
+{% block content %}
+<div class="col-md-10">
+    <h1 style="font-family:arial">Batch {{ batch.batch }}</h1>
+    <br>
+    <div>
+        <h1 style="font-size:30px;font-family:arial">Summary:</h1>
+        {{ batch.summary|safe }}
+    </div>
+    <br><br>
+    <h1 style="font-size:30px;font-family:arial">Escalations Summary:</h1>
+    <div>
+        <table class="dataframe" id="escalationsTable">
+            <thead>
+                <tr style="text-align: right;">
+                    <th class="blue-background" colspan="7">To be completed by DS and BMS</th>
+                    <th class="orange-background" colspan="3">To be completed by CVA or CVA delegates</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="blue-background">Array Code</td>
+                    <td class="blue-background">Sample type</td>
+                    <td class="blue-background">Escalation Summary</td>
+                    <td class="blue-background">Service Guidance changes made</td>
+                    <td class="blue-background">BMS clinical opinion</td>
+                    <td class="blue-background">Name of data scientist</td>
+                    <td class="blue-background">Name of BMS</td>
+                    <td class="orange-background">Final Decision</td>
+                    <td class="orange-background">Approver</td>
+                    <td class="orange-background">Reasoning (If CVA Delegate)</td>
+                </tr>
+                {% for escalation in escalations %}
+                <tr>
+                    <td><a class="article-title" href="{% url 'Pool Helper-Plate' escalation.0 %}">{{ escalation.0 }}</a></td>
+                    <td>{{ escalation.1 }}</td>
+                    <td>{{ escalation.2|safe }}</td>
+                    <td>{{ escalation.3 }}</td>
+                    <td>{{ escalation.4 }}</td>
+                    <td>{{ escalation.5 }}</td>
+                    <td>{{ escalation.6 }}</td>
+                    <td>{{ escalation.7 }}</td>
+                    <td>{{ escalation.8 }}</td>
+                    <td>{{ escalation.9 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table><br>
+        <button onclick="selectElementContents( document.getElementById('escalationsTable') );">Select Entire Table</button>
+        <p>(This allows you to copy and paste it into an email where you can edit it)</p>
+    </div>
+    <script type="text/javascript">
+        function selectElementContents(el) {
+            var body = document.body, range, sel;
+            if (document.createRange && window.getSelection) {
+                range = document.createRange();
+                sel = window.getSelection();
+                sel.removeAllRanges();
+                try {
+                    range.selectNodeContents(el);
+                    sel.addRange(range);
+                } catch (e) {
+                    range.selectNode(el);
+                    sel.addRange(range);
+                }
+            } else if (body.createTextRange) {
+                range = body.createTextRange();
+                range.moveToElementText(el);
+                range.select();
+            }
+        }
+    </script>
+    <br><br>
+</div>
+{% endblock content %}
+
+
+{% block batchnav %}
+
+    {{ batch_nav|safe }}
+
+{% endblock batchnav %}

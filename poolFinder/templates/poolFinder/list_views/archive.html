@@ -1,0 +1,64 @@
+{% extends "poolFinder/base.html" %}
+
+{% block head_block %}
+<meta http-equiv="refresh" content="{{ refresh_rate }}">
+{% endblock head_block %}
+
+{% block content %}
+<div class="col-md-10">
+    <h1>Batch Archive<br><br></h1>
+    <article class="media content-heading">
+        <div class="media-body">
+        <div class="article-metadata">
+        <div class="wrapper">
+            <div><h2 class="text-secondary">Batch name</h2></div>
+            <div><h2 class="text-secondary">Time arrived</h2></div>
+            <div><h2 class="text-secondary">Uploaded By</h2></div>
+        </div></div></div>
+    </article>
+    {% for batch in batches %}
+        <article class="media content-section">
+            <div class="media-body">
+            <div class="article-metadata">
+                <div class="wrapper">
+                    <div>
+                        <span style="float:left;"><small class="text-secondary">Prio plates: {{ batch.prio_plates }}
+                        {% if not batch.prio_plates %}
+                            None
+                        {% endif %}</small></span>
+                    </div>
+                    <div>
+                        <span style="float:left;"><small class="text-secondary">Plates to do: {{ batch.plates_to_do }}
+                    {% if not batch.plates_to_do %}
+                        None
+                    {% endif %}</small></span>
+                    </div>
+                    <div>
+                        <span style="float:right;"><small class="text-secondary">Escalations: {{ batch.escalations }}
+                        {% if not batch.escalations %}
+                            None
+                        {% endif %}</small></span>
+                    </div>
+                </div>
+            </div>
+                <div class="wrapper">
+                    <div><h2><a class="article-title" href="{% url 'Pool Helper-Batch Overview' batch.batch %}">{{ batch.batch }}</a></h2></div>
+                    <div><h4>{{ batch.batch_time|date:"d/m/Y H:i" }}</h4></div>
+                    <div><h4>{{ batch.uploaded_by }}</h4></div>
+                </div>
+            </div>
+        </article>
+    {% endfor %}
+</div>
+<div class="col-md-2">
+    <h3>Page Navigation:</h3><br><br>
+    <p>
+        You are on page {{ current_page }} of {{ possible_pages }}<br>
+        Enter the number of a page to go to that page below:
+    </p>
+    <form method="post">
+        {% csrf_token %}
+        {{ form }}
+    </form>
+</div>
+{% endblock content %}
