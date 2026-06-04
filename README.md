@@ -1,6 +1,6 @@
 # PoolHelper
 
-Donald you might want to add a little here relating to the paper
+Data analysis tool for ePCR done in 365-well plates
 
 Regarding the code:
 This program was designed to run within the laboratory environment in which it was developed and usually needs a connection to the lab's LIMS database to function properly.
