@@ -1,5 +1,13 @@
 # PoolHelper
 
+NOTE: There are multiple different versions of this data analysis program in each branch of this repository. 
+This is because the code was initially developed on an internal git server. I uploaded this repository to act one location with which to showcase this program and its multiple variants.
+
+Versions:
+Main: Pool Helper 2.0. This is a general all-round improvement on version one of the program which was not uploaded to this repository.
+Pool Finder: Web-app based data visualization tool
+Pool Helper Simulation: A version of the program which uses simulations to raise warning signs of contamination in the lab.
+
 Data analysis tool for ePCR done in 365-well plates
 
 Regarding the code:
